@@ -4,17 +4,15 @@ author: "Team Micro-Mobility Mishap"
 output: html_document
 ---
 
-#### Question 5
-
-Please answer all questions in the pdf lab write-up. Your .Rmd file should only contain code and output. Make sure you answer the sub-questions (b, c, d, e, and f) in your lab write-up. 
-
 ##### 5a. Load your dataset into R as a dataframe. 
 
 Check your dataframe and refer to ?read.csv to specify correct options (etc. whether column names are loaded, whether columns are correctly separated). 
 
 We will only be using your likert-style variables (from part 3) in this exercise. You may also need to do some data cleaning once the dataset is loaded (e.g, make sure you declare any missing values for your likert-style questions!). We will not be looking at the other variables, but you might find it good practice to make sure those are read correctly, and to do some analyses in R with those variables. 
 ```{r}
-# Column titles are renamed for easier coding
+# If you look at the Github, there's two csv files: 
+# Micro-MobilityMishapMitigation_FormResponses.csv = unedited dataset
+# RecodedResponses.csv = renamed titles for (much) easier coding as you'll see
 
 df <- read.csv("RecodedResponses.csv")
 ```
@@ -32,6 +30,13 @@ We will be focusing on A1-A5 of the bfi dataset, which correspond to a measure o
 Step 1: Make sure your variables are numeric/integer and have missing values correctly encoded as NA. 
 
 ```{r}
+
+# Not too sure if this is right but...
+# You'll see that the variables from the dataframe are currently in char. We need to turn them into numeric/ints due to Step 1
+# As a result, we need to recode the char responses into int variables
+# I pulled this code from StackOverflow; might need to download car package to make this work
+
+# Here's the car package 
 
 #install.packages("car")
 #library(car)
@@ -73,7 +78,8 @@ If you look at the documentation for bfi carefully, you'll see that A1, unlike A
 
 # You can also use the method we outline in the R tutorial and class session using indexing. 
 
-# Recoding Question G = The top answer "Strongly disagree" = 6 would result in neg correlations with Question E, F, and G. We need to recode
+# We need to recode Question G
+# The top answer "Strongly disagree" = 6 would result in neg correlations with Question E, F, and G
 
 scale_df$reverse_recoded_G = car::recode(scale_df$recoded_G, "1=5; 2=4; 3=3; 4=2; 5=1; NA=NA")
 
@@ -90,6 +96,9 @@ Notice we have selected pairwise.complete.obs, which means for each pair of vari
 
 We do not need to supply the "method" argument for cor() as the default calculation uses Pearson's correlation coefficients, which is what we want. We will revisit correlations in more detail later in the course.  
 ```{r}
+# Pretty much just followed what was already in Lab_1.rmd
+# Diagonal 1.0 as well as no negative correlations showed me that it sorta worked, but haven't checked the nums, maybe inaccurate
+
 scale_df2 = scale_df[, c("recoded_E", "recoded_F", "reverse_recoded_G", "recoded_H")]
 cor(x=scale_df2, use = "pairwise.complete.obs")
 ```
@@ -97,11 +106,14 @@ cor(x=scale_df2, use = "pairwise.complete.obs")
 Step 4: Compute the average inter-item correlation for each item.
 
 ```{r}
+
+# No clue if I did this right lol, worth a check
+
 # You can assign the output of the cor function to a variable 
 corr_matrix = cor(x=scale_df2, use = "pairwise.complete.obs")
 
 # [Error check] Check the class of the function output (is a matrix). 
-class(corr_matrix)
+#class(corr_matrix)
 
 # Similar to dataframes, you can select the elements you want from the matrix, and feed it into the mean function to get your average inter-item correlation 
 
@@ -111,14 +123,59 @@ recoded_E_corrs = corr_matrix[1 , c(2,3,4)]
 
 # [Error check] Double-check to make sure you've selected the elements of each matrix correctly. 
 recoded_E_corrs
-corr_matrix
+#corr_matrix
 
 # [Error check]
 is.vector(recoded_E_corrs)
-class(recoded_E_corrs)
+#class(recoded_E_corrs)
 
 average_recoded_E_corrs = mean(recoded_E_corrs)
 average_recoded_E_corrs
+
+#-------------
+
+recoded_F_corrs = corr_matrix[2 , c(1,3,4)]
+
+# [Error check] Double-check to make sure you've selected the elements of each matrix correctly. 
+recoded_F_corrs
+#corr_matrix
+
+# [Error check]
+is.vector(recoded_F_corrs)
+#class(recoded_F_corrs)
+
+average_recoded_F_corrs = mean(recoded_F_corrs)
+average_recoded_F_corrs
+
+#-------------
+
+recoded_G_corrs = corr_matrix[3 , c(1,2,4)]
+
+# [Error check] Double-check to make sure you've selected the elements of each matrix correctly. 
+recoded_G_corrs
+#corr_matrix
+
+# [Error check]
+is.vector(recoded_G_corrs)
+#class(recoded_F_corrs)
+
+average_recoded_G_corrs = mean(recoded_G_corrs)
+average_recoded_G_corrs
+
+#-------------
+
+recoded_H_corrs = corr_matrix[4 , c(1,2,3)]
+
+# [Error check] Double-check to make sure you've selected the elements of each matrix correctly. 
+recoded_H_corrs
+#corr_matrix
+
+# [Error check]
+is.vector(recoded_H_corrs)
+#class(recoded_F_corrs)
+
+average_recoded_H_corrs = mean(recoded_H_corrs)
+average_recoded_H_corrs
 
 ```
 
