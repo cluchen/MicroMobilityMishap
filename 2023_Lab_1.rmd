@@ -1,0 +1,155 @@
+---
+title: "Micro-Mobility Mishap: Lab 1"
+author: "Team Micro-Mobility Mishap"
+output: html_document
+---
+
+#### Question 5
+
+Please answer all questions in the pdf lab write-up. Your .Rmd file should only contain code and output. Make sure you answer the sub-questions (b, c, d, e, and f) in your lab write-up. 
+
+##### 5a. Load your dataset into R as a dataframe. 
+
+Check your dataframe and refer to ?read.csv to specify correct options (etc. whether column names are loaded, whether columns are correctly separated). 
+
+We will only be using your likert-style variables (from part 3) in this exercise. You may also need to do some data cleaning once the dataset is loaded (e.g, make sure you declare any missing values for your likert-style questions!). We will not be looking at the other variables, but you might find it good practice to make sure those are read correctly, and to do some analyses in R with those variables. 
+```{r}
+#getwd()
+df <- read.csv("Micro-MobilityMishapMitigation_FormResponses.csv")
+```
+
+For the rest of the exercise, we will show you how to analyze your data by using an example dataset. We will be using the bfi dataset from the psych package. You will need to install and load the psych package to run our examples below. Also, you need the psych package in order to use the "alpha" function to calculate Cronbach's alpha. 
+```{r}
+install.packages("psych")
+library("psych")
+
+head(bfi)
+?bfi
+str(bfi)
+```
+
+##### 5b. Compute the average inter-tem correlations for each item.
+
+We will be focusing on A1-A5 of the bfi dataset, which correspond to a measure of Agreeableness. 
+
+Step 1: Make sure your variables are numeric/integer and have missing values correctly encoded as NA. 
+
+```{r}
+# Creating a new dataframe containing only those variables
+scale_df = bfi[, c("A1","A2", "A3", "A4", "A5")]
+
+# [Error Check] Check the class of your variables
+str(scale_df)
+
+# [Error Check] Check you have encoded the missing values correctly
+table(scale_df$A1)
+table(scale_df$A2)
+table(scale_df$A3)
+table(scale_df$A4)
+table(scale_df$A5)
+```
+
+Step 2: Flip any variables that are reverse-coded. 
+
+If you look at the documentation for bfi carefully, you'll see that A1, unlike A2-A5, is reverse-coded. I.e. someone who answers "Very Accurate" to "Am indifferent to the feelings of others" is likely to measure low among a dimension of Agreeableness.
+```{r}
+library(car)
+
+# Reverse-coding A1
+
+# The following is a quicker way to do multiple recodes using a specialized recode function. 
+
+# You can also use the method we outline in the R tutorial and class session using indexing. 
+scale_df$recode_A1 = car::recode(scale_df$A1, "1=6; 2=5; 3=4; 4=3; 5=2; 6=1")
+
+# [Error Check] Check the recode has been done correctly
+head(scale_df[, c("A1", "recode_A1")], 10)
+
+```
+
+Step 3: Run the correlation matrix. 
+
+Read ?cor to make sure you understand the arguments. See under details "For cov and cor one must either give a matrix or data frame for x or give both x and y."
+
+Notice we have selected pairwise.complete.obs, which means for each pair of variables we are correlating, we do not include rows for which either variable has an NA value. In other words, some respondents (rows) may not respond to every question (columns). This means that the number of values used to calculate correlation for each pair of variables may differ depending on the pair used. 
+
+We do not need to supply the "method" argument for cor() as the default calculation uses Pearson's correlation coefficients, which is what we want. We will revisit correlations in more detail later in the course.  
+```{r}
+scale_df2 = scale_df[, c("recode_A1", "A2", "A3", "A4", "A5")]
+cor(x=scale_df2, use = "pairwise.complete.obs")
+```
+
+Step 4: Compute the average inter-item correlation for each item.
+
+```{r}
+# You can assign the output of the cor function to a variable 
+corr_matrix = cor(x=scale_df2, use = "pairwise.complete.obs")
+
+# [Error check] Check the class of the function output (is a matrix). 
+class(corr_matrix)
+
+# Similar to dataframes, you can select the elements you want from the matrix, and feed it into the mean function to get your average inter-item correlation 
+
+# Make sure you exclude the correlation of the variable with itself, as you select the elements to compute each inter-item correlation. 
+
+A1_corrs = corr_matrix[1 , c(2,3,4,5)]
+
+# [Error check] Double-check to make sure you've selected the elements of each matrix correctly. 
+A1_corrs
+corr_matrix
+
+# [Error check]
+is.vector(A1_corrs)
+class(A1_corrs)
+
+average_A1_corrs = mean(A1_corrs)
+average_A1_corrs
+
+
+```
+
+##### 5c. Answer this (and all questions/sub-questions) in your lab write-up. 
+
+##### 5d. Calculate Cronbach’s alpha for your set of likert-style variables. 
+
+Let's say after calculating the average inter-item correlation for each variable, we decide to keep all A1-A5 variables to construct our scale.
+
+We now want to calculate the Cronbach's alpha associated with these 5 variables. 
+
+Looking at ?psych::alpha, you'll see that setting check.keys=TRUE will automatically reverse variables negatively correlated with the total scale. Since we already reverse-coded A1 earlier, setting this option to TRUE does not affect the output of the function. 
+
+```{r}
+psych::alpha(scale_df2[, c("recode_A1", "A2", "A3", "A4", "A5")], check.keys=TRUE)
+```
+
+We get a (raw_alpha) value of 0.7 in the bfi data. The raw_alpha corresponds to the Cronbach's alpha definition we discussed in class. A table of definitions for the output can be viewed at the end of ?psych::alpha. 
+
+##### 5e.	Create a new scale which is the average of your likert-style variables. 
+
+When we decide that several items should be part of the same scale, the last step is to actually create a new variable that averages those items together. 
+
+We want you to create a new scale which is the average of your likert-style variables. You should have already declared your missing values and reverse-coded any necessary variables (eg, if you have a scale of "happiness" but one of your questions is, "In general I am not happy", you would reverse-code that item so that higher values = higher happiness). 
+
+Important: In calculating our row mean below, please note that we are choosing not to remove the NA cases entirely-- thus, we will calculate the non-missing mean. So, if someone answers only 4 questions, we get the average of 4 answered questions, if they answer only 3, we only get the average of those 3 questions, and so on. There are other ways to handle missing data too, which we will discuss in an upcoming lecture.
+```{r}
+library(car)
+# Get the row mean of A1-A5. 
+# The column index argument is unnecessary (since scale_df2 only has those 5 columns) but included for clarity. 
+scale_df2$scale = rowMeans(scale_df2[, c("recode_A1", "A2", "A3", "A4", "A5")], na.rm=TRUE)
+
+# [Error check] Make sure the function does as expected - checking rows with NA values in particular. 
+tail(scale_df2, 50)
+```
+
+##### 5f. Plot a histogram for each of your likert-style variables, and a histogram for your new scale (the average of your likert-style variables). Include these histograms in your lab pdf write-up, and briefly discuss and interpret any notable differences between the individual histograms and the histogram of your new scale.  
+
+```{r}
+hist(scale_df2$recode_A1)
+hist(scale_df2$A2)
+hist(scale_df2$A3)
+hist(scale_df2$A4)
+hist(scale_df2$A5)
+
+# Increasing the number of breaks allows you to see more of the granularity in your new scale variable.  
+hist(scale_df2$scale, breaks=24)
+```
